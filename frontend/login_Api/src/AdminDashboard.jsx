@@ -10,14 +10,16 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
   const [viewingUserEmail, setViewingUserEmail] = useState(null); // State to store the email of the user whose todos are being viewed
 
   // Define available roles for the dropdown, matching backend's ROLE_LEVELS
-  const availableRoles = ['user', 'moderator', 'admin', 'superadmin', 'manager'];
+  // IMPORTANT FIX: Ensure 'superAdmin' capitalization is consistent here
+  const availableRoles = ['user', 'moderator', 'admin', 'superAdmin', 'manager'];
 
   // Define role levels for client-side hierarchy checks, MUST match backend's ROLE_LEVELS
+  // This was already corrected in the previous turn, ensuring 'superAdmin' capitalization.
   const ROLE_LEVELS = {
     user: 0,
     moderator: 1,
     admin: 2,
-    superadmin: 3,
+    superAdmin: 3, // Corrected to match 'superAdmin' capitalization
     manager: 4
   };
 
@@ -27,7 +29,8 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
     setError('');
     setMessage('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/auth/users`, {
+      // Added pagination parameters to the request
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/auth/users?page=1&limit=100`, { // Fetching a reasonable number of users
         headers: {
           'Authorization': `Bearer ${authToken}`,
         },
@@ -80,6 +83,39 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
     }
   };
 
+  // Function to handle deleting a user
+  const handleDeleteUser = async (userId, userEmail) => {
+    if (!window.confirm(`Are you sure you want to delete user: ${userEmail}? This action cannot be undone.`)) {
+      return; // User cancelled
+    }
+
+    setLoading(true);
+    setMessage('');
+    setError('');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/auth/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+        },
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage(data.message || `User ${userEmail} deleted successfully.`);
+        setUsers(users.filter(user => user._id !== userId)); // Remove user from state
+      } else {
+        setError(data.message || 'Failed to delete user. Check your permissions.');
+      }
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError('Network error or server is unreachable while deleting user.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   // Function to handle viewing a specific user's todos
   const handleViewUserTodos = (userId, userEmail) => {
     setViewingUserId(userId);
@@ -96,9 +132,10 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
   // Fetch users on component mount or when authToken/currentUserRole changes
   useEffect(() => {
     // Only fetch if authenticated and the current user has an admin-level role
-    if (authToken && (currentUserRole === 'admin' || currentUserRole === 'superadmin' || currentUserRole === 'manager')) {
+    // IMPORTANT FIX: Ensure 'superAdmin' capitalization is consistent here
+    if (authToken && (currentUserRole === 'admin' || currentUserRole === 'superAdmin' || currentUserRole === 'manager')) {
       fetchUsers();
-    } else if (authToken && currentUserRole && currentUserRole !== 'admin' && currentUserRole !== 'superadmin' && currentUserRole !== 'manager') {
+    } else if (authToken && currentUserRole && currentUserRole !== 'admin' && currentUserRole !== 'superAdmin' && currentUserRole !== 'manager') {
       setError('You do not have sufficient administrative privileges to view this dashboard.');
     }
   }, [authToken, currentUserRole]); // Re-run if authToken or currentUserRole changes
@@ -112,8 +149,9 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
     );
   }
 
-  // Display access denied if not an admin/superadmin/manager
-  if (currentUserRole !== 'admin' && currentUserRole !== 'superadmin' && currentUserRole !== 'manager') {
+  // Display access denied if not an admin/superAdmin/manager
+  // IMPORTANT FIX: Ensure 'superAdmin' capitalization is consistent here
+  if (currentUserRole !== 'admin' && currentUserRole !== 'superAdmin' && currentUserRole !== 'manager') {
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-lg shadow-xl overflow-hidden p-6 text-center text-red-500">
         Access Denied: You must be an administrator, super administrator, or manager to view this page.
@@ -127,8 +165,8 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
       <div className="flex flex-col items-center w-full max-w-lg bg-white dark:bg-[#1a1a1a] rounded-lg shadow-xl overflow-hidden p-6">
         <button
           onClick={handleBackToUsers}
-          className="self-start mb-4 bg-gray-500 text-white font-bold py-2 px-4 rounded-lg
-                     hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75
+          className="self-start mb-4 bg-gray-500 dark:bg-gray-700 text-white dark:text-gray-200 font-bold py-2 px-4 rounded-lg
+                     hover:bg-gray-600 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75
                      transition-colors duration-300 ease-in-out"
         >
           &larr; Back to Users
@@ -137,7 +175,7 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
           Todos for {viewingUserEmail || 'Selected User'}
         </h2>
         {/* Pass the viewingUserId to TodoList */}
-        <TodoList authToken={authToken} currentUserRole={currentUserRole} viewingUserId={viewingUserId} />
+        <TodoList authToken={authToken} currentUserRole={currentUserRole} viewingUserId={viewingUserId} viewingUserEmail={viewingUserEmail} />
       </div>
     );
   }
@@ -170,44 +208,75 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
-                <tr key={user._id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="py-3 px-4 text-gray-800 dark:text-gray-100">{user.name}</td>
-                  <td className="py-3 px-4 text-gray-800 dark:text-gray-100">{user.email}</td>
-                  <td className="py-3 px-4 text-gray-800 dark:text-gray-100 capitalize">{user.role}</td>
-                  <td className="py-3 px-4">
-                    <select
-                      className="bg-gray-200 dark:bg-gray-700 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={user.role} // Set current role as default selected
-                      onChange={(e) => handleChangeRole(user._id, user.email, e.target.value)}
-                      disabled={
-                        loading ||
-                        (ROLE_LEVELS[currentUserRole] <= ROLE_LEVELS[user.role] && currentUserRole !== 'manager') ||
-                        (user.email === localStorage.getItem('userEmail')) // Assuming you store user's email on login
-                      }
-                    >
-                      {availableRoles.map(role => (
-                        <option
-                          key={role}
-                          value={role}
-                          className="capitalize"
-                          disabled={ROLE_LEVELS[role] > ROLE_LEVELS[currentUserRole]}
-                        >
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="py-3 px-4">
-                    <button
-                      onClick={() => handleViewUserTodos(user._id, user.email)}
-                      className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors duration-200"
-                    >
-                      View Todos
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {users.map((user) => {
+                // Get current user's email from localStorage for self-comparison
+                const loggedInUserEmail = localStorage.getItem('userEmail');
+                const isCurrentUser = user.email === loggedInUserEmail;
+
+                // Determine if the dropdown should be disabled
+                // FIX: Simplified logic. Disable if loading, is current user, or current user's role level is less than target user's role level.
+                const isDropdownDisabled =
+                  loading ||
+                  isCurrentUser ||
+                  (ROLE_LEVELS[currentUserRole] < ROLE_LEVELS[user.role]);
+
+                return (
+                  <tr key={user._id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="py-3 px-4 text-gray-800 dark:text-gray-100">{user.name}</td>
+                    <td className="py-3 px-4 text-gray-800 dark:text-gray-100">{user.email}</td>
+                    <td className="py-3 px-4 text-gray-800 dark:text-gray-100 capitalize">{user.role}</td>
+                    <td className="py-3 px-4">
+                      <select
+                        className="bg-gray-200 dark:bg-gray-700 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={user.role} // Set current role as default selected
+                        onChange={(e) => handleChangeRole(user._id, user.email, e.target.value)}
+                        disabled={isDropdownDisabled}
+                      >
+                        {availableRoles.map(role => (
+                          <option
+                            key={role}
+                            value={role}
+                            className="capitalize"
+                            // FIX: Disable options if the new role is higher than current user's role
+                            // IMPORTANT FIX: Ensure 'superAdmin' capitalization is consistent here
+                            disabled={
+                              ROLE_LEVELS[role] > ROLE_LEVELS[currentUserRole] ||
+                              (user.role === 'superAdmin' && currentUserRole !== 'superAdmin')
+                            }
+                          >
+                            {role}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="py-3 px-4 flex space-x-2">
+                      <button
+                        onClick={() => handleViewUserTodos(user._id, user.email)}
+                        className="bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition-colors duration-200"
+                      >
+                        View Todos
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user._id, user.email)}
+                        className="bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 transition-colors duration-200"
+                        // Disable delete button if:
+                        // 1. Loading
+                        // 2. Current user trying to delete themselves
+                        // 3. Current user's role is lower than or equal to target user's role (unless current user is superAdmin)
+                        // 4. Target user is superAdmin and current user is not superAdmin
+                        disabled={
+                          loading ||
+                          isCurrentUser ||
+                          (ROLE_LEVELS[currentUserRole] <= ROLE_LEVELS[user.role] && currentUserRole !== 'superAdmin') ||
+                          (user.role === 'superAdmin' && currentUserRole !== 'superAdmin')
+                        }
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
