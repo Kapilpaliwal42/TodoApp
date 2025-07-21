@@ -50,7 +50,7 @@ export default function TodoList({ authToken, currentUserRole }) { // Added curr
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:3000/api/todos', {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/todos`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ export default function TodoList({ authToken, currentUserRole }) { // Added curr
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`http://localhost:3000/api/todos/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/todos/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export default function TodoList({ authToken, currentUserRole }) { // Added curr
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`http://localhost:3000/api/todos/${id}`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/todos/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${authToken}`, // Include the token
