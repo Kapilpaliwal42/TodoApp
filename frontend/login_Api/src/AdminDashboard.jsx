@@ -27,7 +27,7 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
     setError('');
     setMessage('');
     try {
-      const response = await fetch('http://localhost:3000/api/auth/users', {
+      const response = await fetch('import.meta.env.VITE_BACKEND_API_URL/api/auth/users', {
         headers: {
           'Authorization': `Bearer ${authToken}`,
         },
