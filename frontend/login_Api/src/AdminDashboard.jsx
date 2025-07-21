@@ -10,14 +10,14 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
   const [viewingUserEmail, setViewingUserEmail] = useState(null); // State to store the email of the user whose todos are being viewed
 
   // Define available roles for the dropdown, matching backend's ROLE_LEVELS
-  const availableRoles = ['user', 'moderator', 'admin', 'superAdmin', 'manager'];
+  const availableRoles = ['user', 'moderator', 'admin', 'superadmin', 'manager'];
 
   // Define role levels for client-side hierarchy checks, MUST match backend's ROLE_LEVELS
   const ROLE_LEVELS = {
     user: 0,
     moderator: 1,
     admin: 2,
-    superAdmin: 3,
+    superadmin: 3,
     manager: 4
   };
 
@@ -96,9 +96,9 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
   // Fetch users on component mount or when authToken/currentUserRole changes
   useEffect(() => {
     // Only fetch if authenticated and the current user has an admin-level role
-    if (authToken && (currentUserRole === 'admin' || currentUserRole === 'superAdmin' || currentUserRole === 'manager')) {
+    if (authToken && (currentUserRole === 'admin' || currentUserRole === 'superadmin' || currentUserRole === 'manager')) {
       fetchUsers();
-    } else if (authToken && currentUserRole && currentUserRole !== 'admin' && currentUserRole !== 'superAdmin' && currentUserRole !== 'manager') {
+    } else if (authToken && currentUserRole && currentUserRole !== 'admin' && currentUserRole !== 'superadmin' && currentUserRole !== 'manager') {
       setError('You do not have sufficient administrative privileges to view this dashboard.');
     }
   }, [authToken, currentUserRole]); // Re-run if authToken or currentUserRole changes
@@ -112,8 +112,8 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
     );
   }
 
-  // Display access denied if not an admin/superAdmin/manager
-  if (currentUserRole !== 'admin' && currentUserRole !== 'superAdmin' && currentUserRole !== 'manager') {
+  // Display access denied if not an admin/superadmin/manager
+  if (currentUserRole !== 'admin' && currentUserRole !== 'superadmin' && currentUserRole !== 'manager') {
     return (
       <div className="flex flex-col items-center justify-center w-full max-w-sm bg-white dark:bg-[#1a1a1a] rounded-lg shadow-xl overflow-hidden p-6 text-center text-red-500">
         Access Denied: You must be an administrator, super administrator, or manager to view this page.
