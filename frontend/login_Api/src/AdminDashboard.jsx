@@ -53,7 +53,7 @@ export default function AdminDashboard({ authToken, currentUserRole }) {
     setMessage('');
     setError('');
     try {
-      const response = await fetch('http://localhost:3000/api/auth/changeRole', {
+      const response = await fetch('import.meta.env.VITE_BACKEND_API_URL/api/auth/changeRole', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
