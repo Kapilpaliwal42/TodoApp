@@ -14,7 +14,7 @@ export default function TodoList({ authToken, currentUserRole }) { // Added curr
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:3000/api/todos', {
+      const response = await fetch('import.meta.env.VITE_BACKEND_API_URL/api/todos', {
         headers: {
           'Authorization': `Bearer ${authToken}`, // Include the authentication token
         },
